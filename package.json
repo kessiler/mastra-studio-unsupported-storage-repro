@@ -1,0 +1,20 @@
+{
+  "name": "mastra-studio-unsupported-storage-repro",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "mastra dev",
+    "build": "mastra build --studio",
+    "start": "mastra start"
+  },
+  "engines": { "node": ">=22.13.0" },
+  "dependencies": {
+    "@mastra/core": "1.66.0",
+    "@mastra/libsql": "1.22.5",
+    "@mastra/observability": "1.17.7"
+  },
+  "devDependencies": {
+    "mastra": "1.29.0",
+    "typescript": "6.0.3"
+  }
+}
