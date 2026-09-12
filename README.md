@@ -45,3 +45,25 @@ Blocked analytics requests from browser extensions are separate from this issue.
 ## Configuration
 
 See [`src/mastra/index.ts`](src/mastra/index.ts). An in-memory **LibSQL** database is still LibSQL; it is not the separate `InMemoryStore` provider that supports metrics.
+
+## Proposed fix
+
+Reported upstream as [mastra-ai/mastra#23745](https://github.com/mastra-ai/mastra/issues/23745).
+
+The proposed Studio patch is on [the contribution branch](https://github.com/kessiler/mastra/tree/hotfix/studio-unsupported-storage-requests). No pull request has been opened: the issue is awaiting maintainer triage, as required by Mastra's bug-report template.
+
+To inspect the fixed UI against this reproduction, leave `npm run dev` running here, then in that Mastra branch:
+
+```sh
+pnpm install
+pnpm turbo build --filter '@internal/playground^...'
+HOST=127.0.0.1 PORT=4199 pnpm --filter ./packages/playground exec vite --host 127.0.0.1 --port 5199
+```
+
+Open http://127.0.0.1:5199/inbox and http://127.0.0.1:5199/metrics. Initial feedback requests can still exhaust the bounded SDK/query retries before reporting the error, but the sidebar's recurring polling stops afterward. In browser verification, the feedback error count stayed unchanged over a 36-second idle interval after the initial requests settled. The patched Metrics page issued no additional aggregate or unsupported discovery requests.
+
+Screenshots of the proposed Metrics state:
+
+| Desktop (1440 x 900) | Tablet (768 x 1024) | Mobile (390 x 844) |
+| --- | --- | --- |
+| ![Desktop](screenshots/metrics-desktop.png) | ![Tablet](screenshots/metrics-tablet.png) | ![Mobile](screenshots/metrics-mobile.png) |
