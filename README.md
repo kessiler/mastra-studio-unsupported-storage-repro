@@ -62,13 +62,19 @@ HOST=127.0.0.1 PORT=4199 pnpm --filter ./packages/playground exec vite --host 12
 
 Open http://127.0.0.1:5199/inbox and http://127.0.0.1:5199/metrics. Initial feedback requests can still exhaust the bounded SDK/query retries before reporting the error, but the sidebar's recurring polling stops afterward. In browser verification, the feedback error count stayed unchanged over a 36-second idle interval after the initial requests settled. The patched Metrics page issued no additional aggregate or unsupported discovery requests.
 
-The unsupported Metrics view retains the date selector and URL filter controls. Changing the date preset or loading `/metrics?period=24h&environment=production` should update the controls without sending aggregate or discovery requests. Inbox, trace, and span feedback use one shared polling policy for permanent storage errors.
+The unsupported Metrics view retains the date selector and URL filter controls. Changing the date preset or loading `/metrics?period=24h&filterEnvironment=production` should update the controls without sending aggregate or discovery requests. Inbox, trace, and span feedback use one shared polling policy for permanent storage errors.
 
 Screenshots below show this branch's built Studio running against the local LibSQL kitchen-sink fixture:
 
 | Desktop (1440 x 900) | Tablet (768 x 1024) | Mobile (390 x 844) |
 | --- | --- | --- |
 | ![Desktop](screenshots/metrics-desktop.png) | ![Tablet](screenshots/metrics-tablet.png) | ![Mobile](screenshots/metrics-mobile.png) |
+
+While the capability request is pending, Studio keeps the date controls visible, disables filter editing, and displays a loading indicator. Metrics and discovery requests remain gated during this state. The screenshots below delay only the capability response from the same local fixture:
+
+| Desktop (1440 x 900) | Tablet (768 x 1024) | Mobile (390 x 844) |
+| --- | --- | --- |
+| ![Desktop loading](screenshots/metrics-loading-desktop.png) | ![Tablet loading](screenshots/metrics-loading-tablet.png) | ![Mobile loading](screenshots/metrics-loading-mobile.png) |
 
 ## Contribution workspace setup
 
