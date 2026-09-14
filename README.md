@@ -50,20 +50,44 @@ See [`src/mastra/index.ts`](src/mastra/index.ts). An in-memory **LibSQL** databa
 
 Reported upstream as [mastra-ai/mastra#23745](https://github.com/mastra-ai/mastra/issues/23745).
 
-The proposed Studio patch is on [the contribution branch](https://github.com/kessiler/mastra/tree/hotfix/studio-unsupported-storage-requests). No pull request has been opened: the issue is awaiting maintainer triage, as required by Mastra's bug-report template.
+The proposed Studio patch is in [mastra-ai/mastra#23816](https://github.com/mastra-ai/mastra/pull/23816), on [the contribution branch](https://github.com/kessiler/mastra/tree/hotfix/studio-unsupported-storage-requests).
 
 To inspect the fixed UI against this reproduction, leave `npm run dev` running here, then in that Mastra branch:
 
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
 pnpm turbo build --filter '@internal/playground^...'
 HOST=127.0.0.1 PORT=4199 pnpm --filter ./packages/playground exec vite --host 127.0.0.1 --port 5199
 ```
 
 Open http://127.0.0.1:5199/inbox and http://127.0.0.1:5199/metrics. Initial feedback requests can still exhaust the bounded SDK/query retries before reporting the error, but the sidebar's recurring polling stops afterward. In browser verification, the feedback error count stayed unchanged over a 36-second idle interval after the initial requests settled. The patched Metrics page issued no additional aggregate or unsupported discovery requests.
 
-Screenshots of the proposed Metrics state:
+The unsupported Metrics view retains the date selector and URL filter controls. Changing the date preset or loading `/metrics?period=24h&environment=production` should update the controls without sending aggregate or discovery requests. Inbox, trace, and span feedback use one shared polling policy for permanent storage errors.
+
+Screenshots below show this branch's built Studio running against the local LibSQL kitchen-sink fixture:
 
 | Desktop (1440 x 900) | Tablet (768 x 1024) | Mobile (390 x 844) |
 | --- | --- | --- |
 | ![Desktop](screenshots/metrics-desktop.png) | ![Tablet](screenshots/metrics-tablet.png) | ![Mobile](screenshots/metrics-mobile.png) |
+
+## Contribution workspace setup
+
+Run these commands from the Mastra contribution checkout, not this reproduction. Use the Node.js version supported by Mastra and the pnpm version pinned by its `packageManager` field (11.21.0 at the time of this update). Build the internal packages before collecting tests: a dependency install alone does not produce the exported files used by `@mastra/react` and `@mastra/playground-ui`.
+
+```sh
+pnpm install --frozen-lockfile
+pnpm exec turbo run build --filter=@internal/playground
+pnpm --filter ./packages/playground exec vitest run src/domains/feedback/hooks/__tests__/use-feedback-polling.msw.test.tsx src/pages/metrics/__tests__/index.msw.test.tsx
+pnpm --filter ./packages/playground typecheck
+```
+
+For the existing Metrics browser spec, build the CLI and the fixture's additional workspace dependencies, install the fixture and Chromium, then point the dev server at this branch's Studio build:
+
+```sh
+pnpm exec turbo run build --filter=./packages/cli --filter=@mastra/editor --filter=@mastra/memory --filter=@mastra/libsql --filter=@mastra/loggers --filter=@mastra/mcp
+pnpm install --dir packages/playground/e2e/kitchen-sink --no-frozen-lockfile
+pnpm --filter ./packages/playground exec playwright install chromium
+MASTRA_STUDIO_PATH="$PWD/packages/playground/dist" pnpm --filter ./packages/playground exec playwright test -c e2e/playwright.config.ts e2e/tests/metrics/page.spec.ts --reporter=list --retries=0
+```
+
+The browser spec starts its own local server on port 4111. Its memory-card case skips with LibSQL because that provider does not support metrics; the other cases exercise the date control, URL filter, and period change.
